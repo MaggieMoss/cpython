@@ -106,6 +106,7 @@ typedef struct {
     PyObject *Pass_type;
     PyObject *Pow_singleton;
     PyObject *Pow_type;
+    PyObject *Question_type;
     PyObject *RShift_singleton;
     PyObject *RShift_type;
     PyObject *Raise_type;
@@ -326,6 +327,7 @@ static int astmodule_clear(PyObject *module)
     Py_CLEAR(astmodulestate(module)->Pass_type);
     Py_CLEAR(astmodulestate(module)->Pow_singleton);
     Py_CLEAR(astmodulestate(module)->Pow_type);
+    Py_CLEAR(astmodulestate(module)->Question_type);
     Py_CLEAR(astmodulestate(module)->RShift_singleton);
     Py_CLEAR(astmodulestate(module)->RShift_type);
     Py_CLEAR(astmodulestate(module)->Raise_type);
@@ -545,6 +547,7 @@ static int astmodule_traverse(PyObject *module, visitproc visit, void* arg)
     Py_VISIT(astmodulestate(module)->Pass_type);
     Py_VISIT(astmodulestate(module)->Pow_singleton);
     Py_VISIT(astmodulestate(module)->Pow_type);
+    Py_VISIT(astmodulestate(module)->Question_type);
     Py_VISIT(astmodulestate(module)->RShift_singleton);
     Py_VISIT(astmodulestate(module)->RShift_type);
     Py_VISIT(astmodulestate(module)->Raise_type);
@@ -892,6 +895,9 @@ static const char * const Nonlocal_fields[]={
     "names",
 };
 static const char * const Expr_fields[]={
+    "value",
+};
+static const char * const Question_fields[]={
     "value",
 };
 static const char * const expr_attributes[] = {
@@ -1460,6 +1466,7 @@ static int init_types(void)
         "     | Global(identifier* names)\n"
         "     | Nonlocal(identifier* names)\n"
         "     | Expr(expr value)\n"
+        "     | Question(expr value)\n"
         "     | Pass\n"
         "     | Break\n"
         "     | Continue");
@@ -1585,6 +1592,10 @@ static int init_types(void)
     state->Expr_type = make_type("Expr", state->stmt_type, Expr_fields, 1,
         "Expr(expr value)");
     if (!state->Expr_type) return 0;
+    state->Question_type = make_type("Question", state->stmt_type,
+                                     Question_fields, 1,
+        "Question(expr value)");
+    if (!state->Question_type) return 0;
     state->Pass_type = make_type("Pass", state->stmt_type, NULL, 0,
         "Pass");
     if (!state->Pass_type) return 0;
@@ -2640,6 +2651,28 @@ Expr(expr_ty value, int lineno, int col_offset, int end_lineno, int
         return NULL;
     p->kind = Expr_kind;
     p->v.Expr.value = value;
+    p->lineno = lineno;
+    p->col_offset = col_offset;
+    p->end_lineno = end_lineno;
+    p->end_col_offset = end_col_offset;
+    return p;
+}
+
+stmt_ty
+Question(expr_ty value, int lineno, int col_offset, int end_lineno, int
+         end_col_offset, PyArena *arena)
+{
+    stmt_ty p;
+    if (!value) {
+        PyErr_SetString(PyExc_ValueError,
+                        "field 'value' is required for Question");
+        return NULL;
+    }
+    p = (stmt_ty)PyArena_Malloc(arena, sizeof(*p));
+    if (!p)
+        return NULL;
+    p->kind = Question_kind;
+    p->v.Question.value = value;
     p->lineno = lineno;
     p->col_offset = col_offset;
     p->end_lineno = end_lineno;
@@ -4075,6 +4108,16 @@ ast2obj_stmt(void* _o)
         result = PyType_GenericNew(tp, NULL, NULL);
         if (!result) goto failed;
         value = ast2obj_expr(o->v.Expr.value);
+        if (!value) goto failed;
+        if (PyObject_SetAttr(result, astmodulestate_global->value, value) == -1)
+            goto failed;
+        Py_DECREF(value);
+        break;
+    case Question_kind:
+        tp = (PyTypeObject *)astmodulestate_global->Question_type;
+        result = PyType_GenericNew(tp, NULL, NULL);
+        if (!result) goto failed;
+        value = ast2obj_expr(o->v.Question.value);
         if (!value) goto failed;
         if (PyObject_SetAttr(result, astmodulestate_global->value, value) == -1)
             goto failed;
@@ -7221,6 +7264,32 @@ obj2ast_stmt(PyObject* obj, stmt_ty* out, PyArena* arena)
         if (*out == NULL) goto failed;
         return 0;
     }
+    tp = astmodulestate_global->Question_type;
+    isinstance = PyObject_IsInstance(obj, tp);
+    if (isinstance == -1) {
+        return 1;
+    }
+    if (isinstance) {
+        expr_ty value;
+
+        if (_PyObject_LookupAttr(obj, astmodulestate_global->value, &tmp) < 0) {
+            return 1;
+        }
+        if (tmp == NULL) {
+            PyErr_SetString(PyExc_TypeError, "required field \"value\" missing from Question");
+            return 1;
+        }
+        else {
+            int res;
+            res = obj2ast_expr(tmp, &value, arena);
+            if (res != 0) goto failed;
+            Py_CLEAR(tmp);
+        }
+        *out = Question(value, lineno, col_offset, end_lineno, end_col_offset,
+                        arena);
+        if (*out == NULL) goto failed;
+        return 0;
+    }
     tp = astmodulestate_global->Pass_type;
     isinstance = PyObject_IsInstance(obj, tp);
     if (isinstance == -1) {
@@ -10057,6 +10126,11 @@ PyInit__ast(void)
         goto error;
     }
     Py_INCREF(astmodulestate(m)->Expr_type);
+    if (PyModule_AddObject(m, "Question", astmodulestate_global->Question_type)
+        < 0) {
+        goto error;
+    }
+    Py_INCREF(astmodulestate(m)->Question_type);
     if (PyModule_AddObject(m, "Pass", astmodulestate_global->Pass_type) < 0) {
         goto error;
     }

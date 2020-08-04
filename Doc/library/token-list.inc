@@ -201,6 +201,10 @@
 
    Token value for ``":="``.
 
+.. data:: QUESTION
+
+   Token value for ``"?"``.
+
 .. data:: OP
 
 .. data:: AWAIT

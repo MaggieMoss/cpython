@@ -23,14 +23,16 @@
               (c >= 'a' && c <= 'z')\
                || (c >= 'A' && c <= 'Z')\
                || c == '_'\
-               || (c >= 128))
+               || (c >= 128) \
+               || c == '?')
 
 #define is_potential_identifier_char(c) (\
               (c >= 'a' && c <= 'z')\
                || (c >= 'A' && c <= 'Z')\
                || (c >= '0' && c <= '9')\
                || c == '_'\
-               || (c >= 128))
+               || (c >= 128) \
+               || c == '?')
 
 
 /* Don't ever change this -- it would break the portability of Python code */
@@ -1381,6 +1383,7 @@ tok_get(struct tok_state *tok, const char **p_start, const char **p_end)
     /* Identifier (most frequent token!) */
     nonascii = 0;
     if (is_potential_identifier_start(c)) {
+        printf("%c\n", c);
         /* Process the various legal combinations of b"", r"", u"", and f"". */
         int saw_b = 0, saw_r = 0, saw_u = 0, saw_f = 0;
         while (1) {
