@@ -411,7 +411,6 @@ class GrammarTests(unittest.TestCase):
         x: ?int = None
         self.assertRaises(SyntaxError, eval, "?bar = 1")
 
-
     def test_var_annot_custom_maps(self):
         # tests with custom locals() and __annotations__
         ns = {'__annotations__': CNS()}

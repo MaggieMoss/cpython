@@ -3585,6 +3585,16 @@ class TypeTests(BaseTestCase):
         assert isinstance(foo(KeyboardInterrupt), KeyboardInterrupt)
         assert foo(None) is None
 
+    def test_new_optional(self):
+        assert ?int == Optional[int]
+
+        A = ?Type[BaseException]
+        def foo(a: A) -> ?BaseException:
+            if a is None:
+                return None
+            else:
+                return a()
+        assert isinstance(foo(KeyboardInterrupt), KeyboardInterrupt)
 
 class NewTypeTests(BaseTestCase):
 
