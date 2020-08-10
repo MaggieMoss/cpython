@@ -803,7 +803,6 @@ class MappingProxyTests(unittest.TestCase):
         self.assertDictEqual(mapping, {'a': 0, 'b': 1, 'c': 2})
         self.assertDictEqual(other, {'c': 3, 'p': 0})
 
-
 class ClassCreationTests(unittest.TestCase):
 
     class Meta(type):

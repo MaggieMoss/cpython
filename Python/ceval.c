@@ -1624,6 +1624,16 @@ main_loop:
             DISPATCH();
         }
 
+        case TARGET(UNARY_QUESTION): {
+            PyObject *value = TOP();
+            PyObject *res = value;
+            Py_DECREF(value);
+            SET_TOP(res);
+            if (res == NULL)
+                goto error;
+            DISPATCH();
+        }
+
         case TARGET(BINARY_POWER): {
             PyObject *exp = POP();
             PyObject *base = TOP();
