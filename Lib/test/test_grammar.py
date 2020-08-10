@@ -409,6 +409,8 @@ class GrammarTests(unittest.TestCase):
 
     def test_annot_optional(self):
         x: ?int = None
+        self.assertRaises(SyntaxError, eval, "?bar = 1")
+
 
     def test_var_annot_custom_maps(self):
         # tests with custom locals() and __annotations__
