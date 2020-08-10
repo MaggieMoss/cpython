@@ -1626,7 +1626,8 @@ main_loop:
 
         case TARGET(UNARY_QUESTION): {
             PyObject *value = TOP();
-            PyObject *res = value;
+            // TODO: Check it's a valid type.
+            PyObject *res = Py_Optional(value);
             Py_DECREF(value);
             SET_TOP(res);
             if (res == NULL)

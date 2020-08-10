@@ -122,6 +122,7 @@
 #include "iterobject.h"
 #include "genobject.h"
 #include "descrobject.h"
+#include "optionalobject.h"
 #include "genericaliasobject.h"
 #include "warnings.h"
 #include "weakrefobject.h"

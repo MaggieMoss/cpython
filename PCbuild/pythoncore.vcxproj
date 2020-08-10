@@ -391,6 +391,7 @@
     <ClCompile Include="..\Objects\frameobject.c" />
     <ClCompile Include="..\Objects\funcobject.c" />
     <ClCompile Include="..\Objects\genericaliasobject.c" />
+    <ClCompile Include="..\Objects\optionalobject.c" />
     <ClCompile Include="..\Objects\genobject.c" />
     <ClCompile Include="..\Objects\interpreteridobject.c" />
     <ClCompile Include="..\Objects\iterobject.c" />
