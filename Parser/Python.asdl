@@ -97,7 +97,7 @@ module Python
     operator = Add | Sub | Mult | MatMult | Div | Mod | Pow | LShift
                  | RShift | BitOr | BitXor | BitAnd | FloorDiv
 
-    unaryop = Invert | Not | UAdd | USub
+    unaryop = Invert | Not | UAdd | USub | Question
 
     cmpop = Eq | NotEq | Lt | LtE | Gt | GtE | Is | IsNot | In | NotIn
 

@@ -600,7 +600,6 @@ def _tokenize(readline, encoding):
                 yield TokenInfo(ERRORTOKEN, line[pos],
                            (lnum, pos), (lnum, pos+1), line)
                 pos += 1
-
     # Add an implicit NEWLINE if the input doesn't end in one
     if last_line and last_line[-1] not in '\r\n':
         yield TokenInfo(NEWLINE, '', (lnum - 1, len(last_line)), (lnum - 1, len(last_line) + 1), '')

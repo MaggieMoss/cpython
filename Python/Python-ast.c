@@ -106,6 +106,8 @@ typedef struct {
     PyObject *Pass_type;
     PyObject *Pow_singleton;
     PyObject *Pow_type;
+    PyObject *Question_singleton;
+    PyObject *Question_type;
     PyObject *RShift_singleton;
     PyObject *RShift_type;
     PyObject *Raise_type;
@@ -326,6 +328,8 @@ static int astmodule_clear(PyObject *module)
     Py_CLEAR(astmodulestate(module)->Pass_type);
     Py_CLEAR(astmodulestate(module)->Pow_singleton);
     Py_CLEAR(astmodulestate(module)->Pow_type);
+    Py_CLEAR(astmodulestate(module)->Question_singleton);
+    Py_CLEAR(astmodulestate(module)->Question_type);
     Py_CLEAR(astmodulestate(module)->RShift_singleton);
     Py_CLEAR(astmodulestate(module)->RShift_type);
     Py_CLEAR(astmodulestate(module)->Raise_type);
@@ -545,6 +549,8 @@ static int astmodule_traverse(PyObject *module, visitproc visit, void* arg)
     Py_VISIT(astmodulestate(module)->Pass_type);
     Py_VISIT(astmodulestate(module)->Pow_singleton);
     Py_VISIT(astmodulestate(module)->Pow_type);
+    Py_VISIT(astmodulestate(module)->Question_singleton);
+    Py_VISIT(astmodulestate(module)->Question_type);
     Py_VISIT(astmodulestate(module)->RShift_singleton);
     Py_VISIT(astmodulestate(module)->RShift_type);
     Py_VISIT(astmodulestate(module)->Raise_type);
@@ -1868,7 +1874,7 @@ static int init_types(void)
                                                   NULL);
     if (!state->FloorDiv_singleton) return 0;
     state->unaryop_type = make_type("unaryop", state->AST_type, NULL, 0,
-        "unaryop = Invert | Not | UAdd | USub");
+        "unaryop = Invert | Not | UAdd | USub | Question");
     if (!state->unaryop_type) return 0;
     if (!add_attributes(state->unaryop_type, NULL, 0)) return 0;
     state->Invert_type = make_type("Invert", state->unaryop_type, NULL, 0,
@@ -1896,6 +1902,13 @@ static int init_types(void)
     state->USub_singleton = PyType_GenericNew((PyTypeObject *)state->USub_type,
                                               NULL, NULL);
     if (!state->USub_singleton) return 0;
+    state->Question_type = make_type("Question", state->unaryop_type, NULL, 0,
+        "Question");
+    if (!state->Question_type) return 0;
+    state->Question_singleton = PyType_GenericNew((PyTypeObject
+                                                  *)state->Question_type, NULL,
+                                                  NULL);
+    if (!state->Question_singleton) return 0;
     state->cmpop_type = make_type("cmpop", state->AST_type, NULL, 0,
         "cmpop = Eq | NotEq | Lt | LtE | Gt | GtE | Is | IsNot | In | NotIn");
     if (!state->cmpop_type) return 0;
@@ -4697,6 +4710,9 @@ PyObject* ast2obj_unaryop(unaryop_ty o)
         case USub:
             Py_INCREF(astmodulestate_global->USub_singleton);
             return astmodulestate_global->USub_singleton;
+        case Question:
+            Py_INCREF(astmodulestate_global->Question_singleton);
+            return astmodulestate_global->Question_singleton;
     }
     Py_UNREACHABLE();
 }
@@ -8999,6 +9015,14 @@ obj2ast_unaryop(PyObject* obj, unaryop_ty* out, PyArena* arena)
         *out = USub;
         return 0;
     }
+    isinstance = PyObject_IsInstance(obj, astmodulestate_global->Question_type);
+    if (isinstance == -1) {
+        return 1;
+    }
+    if (isinstance) {
+        *out = Question;
+        return 0;
+    }
 
     PyErr_Format(PyExc_TypeError, "expected some sort of unaryop, but got %R", obj);
     return 1;
@@ -10313,6 +10337,11 @@ PyInit__ast(void)
         goto error;
     }
     Py_INCREF(astmodulestate(m)->USub_type);
+    if (PyModule_AddObject(m, "Question", astmodulestate_global->Question_type)
+        < 0) {
+        goto error;
+    }
+    Py_INCREF(astmodulestate(m)->Question_type);
     if (PyModule_AddObject(m, "cmpop", astmodulestate_global->cmpop_type) < 0) {
         goto error;
     }

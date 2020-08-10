@@ -407,6 +407,9 @@ class GrammarTests(unittest.TestCase):
         with self.assertRaises(KeyError):
             gns['__annotations__']
 
+    # def test_annot_optional(self):
+    #     x: ?int = None
+
     def test_var_annot_custom_maps(self):
         # tests with custom locals() and __annotations__
         ns = {'__annotations__': CNS()}

@@ -1378,6 +1378,11 @@ tok_get(struct tok_state *tok, const char **p_start, const char **p_end)
         return tok->done == E_EOF ? ENDMARKER : ERRORTOKEN;
     }
 
+    /* Check for Optional shorthand */
+    if (c == '?') {
+        return QUESTION;
+    }
+
     /* Identifier (most frequent token!) */
     nonascii = 0;
     if (is_potential_identifier_start(c)) {
