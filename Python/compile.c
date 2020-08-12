@@ -874,11 +874,11 @@ stack_effect(int opcode, int oparg, int jump)
             return 2;
 
         /* Unary operators */
+        case UNARY_QUESTION:
         case UNARY_POSITIVE:
         case UNARY_NEGATIVE:
         case UNARY_NOT:
         case UNARY_INVERT:
-        case UNARY_QUESTION:
             return 0;
 
         case SET_ADD:

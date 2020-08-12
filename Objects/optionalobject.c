@@ -72,7 +72,18 @@ static PyMethodDef optional_methods[] = {
 static PyObject *
 optional_richcompare(PyObject *a, PyObject *b, int op)
 {
-    return a;
+    printf("\nB: \n");
+    PyObject_Print(Py_TYPE(b), stdout, 0);
+    optionalobject *aa = (optionalobject *)a;
+    printf("\nA:");
+    PyObject_Print(aa->args, stdout, 0);
+    if (op != Py_EQ && op != Py_NE) {
+        PyObject *result = Py_NotImplemented;
+        Py_INCREF(result);
+        return result;
+    }
+
+    Py_RETURN_FALSE;
 }
 
 
@@ -197,10 +208,9 @@ Py_Optional(PyObject *args)
 {
     optionalobject *alias = PyObject_GC_New(optionalobject, &Py_OptionalType);
     if (alias == NULL) {
-        Py_DECREF(args);
         return NULL;
     }
-
+    Py_INCREF(args);
     alias->args = args;
     _PyObject_GC_TRACK(alias);
     return (PyObject *) alias;
