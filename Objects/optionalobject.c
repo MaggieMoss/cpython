@@ -52,13 +52,33 @@ optional_getattro(PyObject *self, PyObject *name)
 static PyObject *
 optional_instancecheck(PyObject *self, PyObject *instance)
 {
-    return instance;
+    optionalobject *alias = (optionalobject *)self;
+    PyObject *arg = alias->args;
+    if (PyType_Check(arg) && PyObject_IsInstance(instance, arg) != 0) {
+        Py_RETURN_TRUE;
+    }
+    if (instance == Py_None) {
+        Py_RETURN_TRUE;
+    }
+    Py_RETURN_FALSE;
 }
 
 static PyObject *
 optional_subclasscheck(PyObject *self, PyObject *instance)
 {
-    return instance;
+    if (!PyType_Check(instance)) {
+        PyErr_SetString(PyExc_TypeError, "issubclass() arg 1 must be a class");
+        return NULL;
+    }
+
+    optionalobject *alias = (optionalobject *)self;
+    PyObject *arg = alias->args;
+
+    if (PyType_Check(arg) && (PyType_IsSubtype((PyTypeObject *)instance, (PyTypeObject *)arg) != 0)) {
+        Py_RETURN_TRUE;
+    }
+
+    Py_RETURN_FALSE;
 }
 
 static PyMethodDef optional_methods[] = {

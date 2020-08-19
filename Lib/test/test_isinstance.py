@@ -4,6 +4,7 @@
 
 import unittest
 import sys
+import typing
 
 
 
@@ -270,6 +271,13 @@ class TestIsInstanceIsSubclass(unittest.TestCase):
                 return (A(), )
 
         self.assertEqual(True, issubclass(B(), int))
+
+    def test_optional_isinstance(self):
+        self.assertTrue(issubclass(int, ?int))
+        self.assertTrue(issubclass(Child, ?Super))
+        self.assertTrue(isinstance(Child(), ?Super))
+        self.assertTrue(isinstance(None, ?Super))
+
 
 
 def blowstack(fxn, arg, compare_to):

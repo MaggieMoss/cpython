@@ -601,7 +601,7 @@ class TypesTests(unittest.TestCase):
 
     def test_optional_operator_types(self):
         self.assertEqual(?int, typing.Optional[int])
-
+        self.assertIsInstance(1, ?int)
 
 class MappingProxyTests(unittest.TestCase):
     mappingproxy = types.MappingProxyType
