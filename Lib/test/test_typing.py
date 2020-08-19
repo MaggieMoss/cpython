@@ -3587,6 +3587,7 @@ class TypeTests(BaseTestCase):
 
     def test_new_optional(self):
         assert ?int == Optional[int]
+        assert ?int != int
 
         A = ?Type[BaseException]
         def foo(a: A) -> ?BaseException:

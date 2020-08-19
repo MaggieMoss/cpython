@@ -7,6 +7,7 @@ import pickle
 import locale
 import sys
 import types
+import typing
 import unittest.mock
 import weakref
 
@@ -597,6 +598,9 @@ class TypesTests(unittest.TestCase):
         self.assertIsInstance(int.__dict__['from_bytes'], types.ClassMethodDescriptorType)
         self.assertIsInstance(int.from_bytes, types.BuiltinMethodType)
         self.assertIsInstance(int.__new__, types.BuiltinMethodType)
+
+    def test_optional_operator_types(self):
+        self.assertEqual(?int, typing.Optional[int])
 
 
 class MappingProxyTests(unittest.TestCase):

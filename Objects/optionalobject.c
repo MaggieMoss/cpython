@@ -52,14 +52,12 @@ optional_getattro(PyObject *self, PyObject *name)
 static PyObject *
 optional_instancecheck(PyObject *self, PyObject *instance)
 {
-    // TODO: MM: Implement this.
     return instance;
 }
 
 static PyObject *
 optional_subclasscheck(PyObject *self, PyObject *instance)
 {
-    // TODO: MM: Implement this.
     return instance;
 }
 
@@ -68,21 +66,77 @@ static PyMethodDef optional_methods[] = {
     {"__subclasscheck__", optional_subclasscheck, METH_O},
     {0}};
 
+static int
+is_typing_module(PyObject *obj) {
+    PyObject *module = PyObject_GetAttrString(obj, "__module__");
+    if (module == NULL) {
+        return -1;
+    }
+    int is_typing = PyUnicode_Check(module) && _PyUnicode_EqualToASCIIString(module, "typing");
+    Py_DECREF(module);
+    return is_typing;
+}
+
+static int
+is_typing_name(PyObject *obj, char *name)
+{
+    PyTypeObject *type = Py_TYPE(obj);
+    if (strcmp(type->tp_name, name) != 0) {
+        return 0;
+    }
+    return is_typing_module(obj);
+}
 
 static PyObject *
 optional_richcompare(PyObject *a, PyObject *b, int op)
 {
-    printf("\nB: \n");
-    PyObject_Print(Py_TYPE(b), stdout, 0);
-    optionalobject *aa = (optionalobject *)a;
-    printf("\nA:");
-    PyObject_Print(aa->args, stdout, 0);
     if (op != Py_EQ && op != Py_NE) {
         PyObject *result = Py_NotImplemented;
         Py_INCREF(result);
         return result;
     }
+    optionalobject *aa = (optionalobject *)a;
 
+    int is_typing_union = is_typing_name(b, "_UnionGenericAlias");
+    if (is_typing_union < 0) {
+        return NULL;
+    }
+
+    PyTypeObject *type = Py_TYPE(b);
+    if (is_typing_union) {
+        // create a tuple of the optional arg + PyNone.
+        PyObject *a_tuple = PyTuple_Pack(2, aa->args, Py_TYPE(Py_None));
+        if (a_tuple == NULL) {
+            return NULL;
+        }
+        PyObject *a_set = PySet_New(a_tuple);
+        if (a_set == NULL) {
+            Py_DECREF(a_set);
+            return NULL;
+        }
+        Py_DECREF(a_tuple);
+
+        PyObject* b_args = PyObject_GetAttrString(b, "__args__");
+        if (b_args == NULL) {
+            Py_DECREF(a_set);
+            return NULL;
+        }
+        PyObject *b_set = PySet_New(b_args);
+        if (b_set == NULL) {
+            Py_DECREF(a_set);
+            Py_DECREF(b_args);
+            return NULL;
+        }
+        Py_DECREF(b_args);
+        PyObject *result = PyObject_RichCompare(a_set, b_set, op);
+        Py_DECREF(a_set);
+        Py_DECREF(b_set);
+        return result;
+    } else if (type == &Py_OptionalType) {
+        optionalobject *bb = (optionalobject *)b;
+        PyObject *result = PyObject_RichCompare(aa->args, bb->args, op);
+        return result;
+    }
     Py_RETURN_FALSE;
 }
 
