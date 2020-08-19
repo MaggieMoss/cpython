@@ -14,7 +14,6 @@ optionalobject_dealloc(PyObject *self)
 {
     optionalobject *alias = (optionalobject *)self;
 
-    _PyObject_GC_UNTRACK(self);
     Py_XDECREF(alias->args);
     self->ob_type->tp_free(self);
 }
@@ -28,14 +27,6 @@ optional_hash(PyObject *self)
         return -1;
     }
     return h1;
-}
-
-static int
-optional_traverse(PyObject *self, visitproc visit, void *arg)
-{
-    optionalobject *alias = (optionalobject *)self;
-    Py_VISIT(alias->args);
-    return 0;
 }
 
 static PyMemberDef optional_members[] = {
@@ -266,10 +257,9 @@ PyTypeObject Py_OptionalType = {
     .tp_basicsize = sizeof(optionalobject),
     .tp_dealloc = optionalobject_dealloc,
     .tp_alloc = PyType_GenericAlloc,
-    .tp_free = PyObject_GC_Del,
-    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,
+    .tp_free = PyObject_Del,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
     .tp_hash = optional_hash,
-    .tp_traverse = optional_traverse,
     .tp_getattro = optional_getattro,
     .tp_members = optional_members,
     .tp_methods = optional_methods,
@@ -280,12 +270,11 @@ PyTypeObject Py_OptionalType = {
 PyObject *
 Py_Optional(PyObject *args)
 {
-    optionalobject *alias = PyObject_GC_New(optionalobject, &Py_OptionalType);
+    optionalobject *alias = PyObject_New(optionalobject, &Py_OptionalType);
     if (alias == NULL) {
         return NULL;
     }
     Py_INCREF(args);
     alias->args = args;
-    _PyObject_GC_TRACK(alias);
     return (PyObject *) alias;
 }
