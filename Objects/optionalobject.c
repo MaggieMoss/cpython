@@ -148,6 +148,9 @@ optional_richcompare(PyObject *a, PyObject *b, int op)
         PyObject *result = PyObject_RichCompare(aa->args, bb->args, op);
         return result;
     }
+    if (op == Py_NE) {
+        Py_RETURN_TRUE;
+    }
     Py_RETURN_FALSE;
 }
 

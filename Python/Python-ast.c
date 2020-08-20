@@ -915,14 +915,14 @@ static const char * const NamedExpr_fields[]={
     "target",
     "value",
 };
+static const char * const UnaryOp_fields[]={
+    "op",
+    "operand",
+};
 static const char * const BinOp_fields[]={
     "left",
     "op",
     "right",
-};
-static const char * const UnaryOp_fields[]={
-    "op",
-    "operand",
 };
 static const char * const Lambda_fields[]={
     "args",
@@ -1603,8 +1603,8 @@ static int init_types(void)
     state->expr_type = make_type("expr", state->AST_type, NULL, 0,
         "expr = BoolOp(boolop op, expr* values)\n"
         "     | NamedExpr(expr target, expr value)\n"
-        "     | BinOp(expr left, operator op, expr right)\n"
         "     | UnaryOp(unaryop op, expr operand)\n"
+        "     | BinOp(expr left, operator op, expr right)\n"
         "     | Lambda(arguments args, expr body)\n"
         "     | IfExp(expr test, expr body, expr orelse)\n"
         "     | Dict(expr* keys, expr* values)\n"
@@ -1642,13 +1642,13 @@ static int init_types(void)
                                       NamedExpr_fields, 2,
         "NamedExpr(expr target, expr value)");
     if (!state->NamedExpr_type) return 0;
-    state->BinOp_type = make_type("BinOp", state->expr_type, BinOp_fields, 3,
-        "BinOp(expr left, operator op, expr right)");
-    if (!state->BinOp_type) return 0;
     state->UnaryOp_type = make_type("UnaryOp", state->expr_type,
                                     UnaryOp_fields, 2,
         "UnaryOp(unaryop op, expr operand)");
     if (!state->UnaryOp_type) return 0;
+    state->BinOp_type = make_type("BinOp", state->expr_type, BinOp_fields, 3,
+        "BinOp(expr left, operator op, expr right)");
+    if (!state->BinOp_type) return 0;
     state->Lambda_type = make_type("Lambda", state->expr_type, Lambda_fields, 2,
         "Lambda(arguments args, expr body)");
     if (!state->Lambda_type) return 0;
@@ -2760,6 +2760,34 @@ NamedExpr(expr_ty target, expr_ty value, int lineno, int col_offset, int
 }
 
 expr_ty
+UnaryOp(unaryop_ty op, expr_ty operand, int lineno, int col_offset, int
+        end_lineno, int end_col_offset, PyArena *arena)
+{
+    expr_ty p;
+    if (!op) {
+        PyErr_SetString(PyExc_ValueError,
+                        "field 'op' is required for UnaryOp");
+        return NULL;
+    }
+    if (!operand) {
+        PyErr_SetString(PyExc_ValueError,
+                        "field 'operand' is required for UnaryOp");
+        return NULL;
+    }
+    p = (expr_ty)PyArena_Malloc(arena, sizeof(*p));
+    if (!p)
+        return NULL;
+    p->kind = UnaryOp_kind;
+    p->v.UnaryOp.op = op;
+    p->v.UnaryOp.operand = operand;
+    p->lineno = lineno;
+    p->col_offset = col_offset;
+    p->end_lineno = end_lineno;
+    p->end_col_offset = end_col_offset;
+    return p;
+}
+
+expr_ty
 BinOp(expr_ty left, operator_ty op, expr_ty right, int lineno, int col_offset,
       int end_lineno, int end_col_offset, PyArena *arena)
 {
@@ -2786,34 +2814,6 @@ BinOp(expr_ty left, operator_ty op, expr_ty right, int lineno, int col_offset,
     p->v.BinOp.left = left;
     p->v.BinOp.op = op;
     p->v.BinOp.right = right;
-    p->lineno = lineno;
-    p->col_offset = col_offset;
-    p->end_lineno = end_lineno;
-    p->end_col_offset = end_col_offset;
-    return p;
-}
-
-expr_ty
-UnaryOp(unaryop_ty op, expr_ty operand, int lineno, int col_offset, int
-        end_lineno, int end_col_offset, PyArena *arena)
-{
-    expr_ty p;
-    if (!op) {
-        PyErr_SetString(PyExc_ValueError,
-                        "field 'op' is required for UnaryOp");
-        return NULL;
-    }
-    if (!operand) {
-        PyErr_SetString(PyExc_ValueError,
-                        "field 'operand' is required for UnaryOp");
-        return NULL;
-    }
-    p = (expr_ty)PyArena_Malloc(arena, sizeof(*p));
-    if (!p)
-        return NULL;
-    p->kind = UnaryOp_kind;
-    p->v.UnaryOp.op = op;
-    p->v.UnaryOp.operand = operand;
     p->lineno = lineno;
     p->col_offset = col_offset;
     p->end_lineno = end_lineno;
@@ -4180,6 +4180,22 @@ ast2obj_expr(void* _o)
             goto failed;
         Py_DECREF(value);
         break;
+    case UnaryOp_kind:
+        tp = (PyTypeObject *)astmodulestate_global->UnaryOp_type;
+        result = PyType_GenericNew(tp, NULL, NULL);
+        if (!result) goto failed;
+        value = ast2obj_unaryop(o->v.UnaryOp.op);
+        if (!value) goto failed;
+        if (PyObject_SetAttr(result, astmodulestate_global->op, value) == -1)
+            goto failed;
+        Py_DECREF(value);
+        value = ast2obj_expr(o->v.UnaryOp.operand);
+        if (!value) goto failed;
+        if (PyObject_SetAttr(result, astmodulestate_global->operand, value) ==
+            -1)
+            goto failed;
+        Py_DECREF(value);
+        break;
     case BinOp_kind:
         tp = (PyTypeObject *)astmodulestate_global->BinOp_type;
         result = PyType_GenericNew(tp, NULL, NULL);
@@ -4197,22 +4213,6 @@ ast2obj_expr(void* _o)
         value = ast2obj_expr(o->v.BinOp.right);
         if (!value) goto failed;
         if (PyObject_SetAttr(result, astmodulestate_global->right, value) == -1)
-            goto failed;
-        Py_DECREF(value);
-        break;
-    case UnaryOp_kind:
-        tp = (PyTypeObject *)astmodulestate_global->UnaryOp_type;
-        result = PyType_GenericNew(tp, NULL, NULL);
-        if (!result) goto failed;
-        value = ast2obj_unaryop(o->v.UnaryOp.op);
-        if (!value) goto failed;
-        if (PyObject_SetAttr(result, astmodulestate_global->op, value) == -1)
-            goto failed;
-        Py_DECREF(value);
-        value = ast2obj_expr(o->v.UnaryOp.operand);
-        if (!value) goto failed;
-        if (PyObject_SetAttr(result, astmodulestate_global->operand, value) ==
-            -1)
             goto failed;
         Py_DECREF(value);
         break;
@@ -7450,6 +7450,47 @@ obj2ast_expr(PyObject* obj, expr_ty* out, PyArena* arena)
         if (*out == NULL) goto failed;
         return 0;
     }
+    tp = astmodulestate_global->UnaryOp_type;
+    isinstance = PyObject_IsInstance(obj, tp);
+    if (isinstance == -1) {
+        return 1;
+    }
+    if (isinstance) {
+        unaryop_ty op;
+        expr_ty operand;
+
+        if (_PyObject_LookupAttr(obj, astmodulestate_global->op, &tmp) < 0) {
+            return 1;
+        }
+        if (tmp == NULL) {
+            PyErr_SetString(PyExc_TypeError, "required field \"op\" missing from UnaryOp");
+            return 1;
+        }
+        else {
+            int res;
+            res = obj2ast_unaryop(tmp, &op, arena);
+            if (res != 0) goto failed;
+            Py_CLEAR(tmp);
+        }
+        if (_PyObject_LookupAttr(obj, astmodulestate_global->operand, &tmp) <
+            0) {
+            return 1;
+        }
+        if (tmp == NULL) {
+            PyErr_SetString(PyExc_TypeError, "required field \"operand\" missing from UnaryOp");
+            return 1;
+        }
+        else {
+            int res;
+            res = obj2ast_expr(tmp, &operand, arena);
+            if (res != 0) goto failed;
+            Py_CLEAR(tmp);
+        }
+        *out = UnaryOp(op, operand, lineno, col_offset, end_lineno,
+                       end_col_offset, arena);
+        if (*out == NULL) goto failed;
+        return 0;
+    }
     tp = astmodulestate_global->BinOp_type;
     isinstance = PyObject_IsInstance(obj, tp);
     if (isinstance == -1) {
@@ -7501,47 +7542,6 @@ obj2ast_expr(PyObject* obj, expr_ty* out, PyArena* arena)
         }
         *out = BinOp(left, op, right, lineno, col_offset, end_lineno,
                      end_col_offset, arena);
-        if (*out == NULL) goto failed;
-        return 0;
-    }
-    tp = astmodulestate_global->UnaryOp_type;
-    isinstance = PyObject_IsInstance(obj, tp);
-    if (isinstance == -1) {
-        return 1;
-    }
-    if (isinstance) {
-        unaryop_ty op;
-        expr_ty operand;
-
-        if (_PyObject_LookupAttr(obj, astmodulestate_global->op, &tmp) < 0) {
-            return 1;
-        }
-        if (tmp == NULL) {
-            PyErr_SetString(PyExc_TypeError, "required field \"op\" missing from UnaryOp");
-            return 1;
-        }
-        else {
-            int res;
-            res = obj2ast_unaryop(tmp, &op, arena);
-            if (res != 0) goto failed;
-            Py_CLEAR(tmp);
-        }
-        if (_PyObject_LookupAttr(obj, astmodulestate_global->operand, &tmp) <
-            0) {
-            return 1;
-        }
-        if (tmp == NULL) {
-            PyErr_SetString(PyExc_TypeError, "required field \"operand\" missing from UnaryOp");
-            return 1;
-        }
-        else {
-            int res;
-            res = obj2ast_expr(tmp, &operand, arena);
-            if (res != 0) goto failed;
-            Py_CLEAR(tmp);
-        }
-        *out = UnaryOp(op, operand, lineno, col_offset, end_lineno,
-                       end_col_offset, arena);
         if (*out == NULL) goto failed;
         return 0;
     }
@@ -10108,15 +10108,15 @@ PyInit__ast(void)
         goto error;
     }
     Py_INCREF(astmodulestate(m)->NamedExpr_type);
-    if (PyModule_AddObject(m, "BinOp", astmodulestate_global->BinOp_type) < 0) {
-        goto error;
-    }
-    Py_INCREF(astmodulestate(m)->BinOp_type);
     if (PyModule_AddObject(m, "UnaryOp", astmodulestate_global->UnaryOp_type) <
         0) {
         goto error;
     }
     Py_INCREF(astmodulestate(m)->UnaryOp_type);
+    if (PyModule_AddObject(m, "BinOp", astmodulestate_global->BinOp_type) < 0) {
+        goto error;
+    }
+    Py_INCREF(astmodulestate(m)->BinOp_type);
     if (PyModule_AddObject(m, "Lambda", astmodulestate_global->Lambda_type) <
         0) {
         goto error;

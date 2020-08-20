@@ -3586,11 +3586,11 @@ class TypeTests(BaseTestCase):
         assert foo(None) is None
 
     def test_new_optional(self):
-        assert ?int == Optional[int]
-        assert ?int != int
+        assert int? == Optional[int]
+        assert int? != int
 
-        A = ?Type[BaseException]
-        def foo(a: A) -> ?BaseException:
+        A = Type[BaseException]?
+        def foo(a: A) -> BaseException?:
             if a is None:
                 return None
             else:

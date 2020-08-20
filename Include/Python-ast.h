@@ -224,7 +224,7 @@ struct _stmt {
     int end_col_offset;
 };
 
-enum _expr_kind {BoolOp_kind=1, NamedExpr_kind=2, BinOp_kind=3, UnaryOp_kind=4,
+enum _expr_kind {BoolOp_kind=1, NamedExpr_kind=2, UnaryOp_kind=3, BinOp_kind=4,
                   Lambda_kind=5, IfExp_kind=6, Dict_kind=7, Set_kind=8,
                   ListComp_kind=9, SetComp_kind=10, DictComp_kind=11,
                   GeneratorExp_kind=12, Await_kind=13, Yield_kind=14,
@@ -246,15 +246,15 @@ struct _expr {
         } NamedExpr;
 
         struct {
+            unaryop_ty op;
+            expr_ty operand;
+        } UnaryOp;
+
+        struct {
             expr_ty left;
             operator_ty op;
             expr_ty right;
         } BinOp;
-
-        struct {
-            unaryop_ty op;
-            expr_ty operand;
-        } UnaryOp;
 
         struct {
             arguments_ty args;
@@ -566,13 +566,13 @@ expr_ty _Py_BoolOp(boolop_ty op, asdl_seq * values, int lineno, int col_offset,
 expr_ty _Py_NamedExpr(expr_ty target, expr_ty value, int lineno, int
                       col_offset, int end_lineno, int end_col_offset, PyArena
                       *arena);
+#define UnaryOp(a0, a1, a2, a3, a4, a5, a6) _Py_UnaryOp(a0, a1, a2, a3, a4, a5, a6)
+expr_ty _Py_UnaryOp(unaryop_ty op, expr_ty operand, int lineno, int col_offset,
+                    int end_lineno, int end_col_offset, PyArena *arena);
 #define BinOp(a0, a1, a2, a3, a4, a5, a6, a7) _Py_BinOp(a0, a1, a2, a3, a4, a5, a6, a7)
 expr_ty _Py_BinOp(expr_ty left, operator_ty op, expr_ty right, int lineno, int
                   col_offset, int end_lineno, int end_col_offset, PyArena
                   *arena);
-#define UnaryOp(a0, a1, a2, a3, a4, a5, a6) _Py_UnaryOp(a0, a1, a2, a3, a4, a5, a6)
-expr_ty _Py_UnaryOp(unaryop_ty op, expr_ty operand, int lineno, int col_offset,
-                    int end_lineno, int end_col_offset, PyArena *arena);
 #define Lambda(a0, a1, a2, a3, a4, a5, a6) _Py_Lambda(a0, a1, a2, a3, a4, a5, a6)
 expr_ty _Py_Lambda(arguments_ty args, expr_ty body, int lineno, int col_offset,
                    int end_lineno, int end_col_offset, PyArena *arena);

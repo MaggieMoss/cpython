@@ -332,7 +332,6 @@ expression[expr_ty] (memo):
     | a=disjunction 'if' b=disjunction 'else' c=expression { _Py_IfExp(b, a, c, EXTRA) }
     | disjunction
     | lambdef
-    | '?' a=expression { _Py_UnaryOp(Question, a, EXTRA) }
 
 lambdef[expr_ty]:
     | 'lambda' a=[lambda_params] ':' b=expression { _Py_Lambda((a) ? a : CHECK(_PyPegen_empty_arguments(p)), b, EXTRA) }
@@ -454,6 +453,7 @@ factor[expr_ty] (memo):
     | '+' a=factor { _Py_UnaryOp(UAdd, a, EXTRA) }
     | '-' a=factor { _Py_UnaryOp(USub, a, EXTRA) }
     | '~' a=factor { _Py_UnaryOp(Invert, a, EXTRA) }
+    | a=factor '?' { _Py_UnaryOp(Question, a, EXTRA) }
     | power
 power[expr_ty]:
     | a=await_primary '**' b=factor { _Py_BinOp(a, Pow, b, EXTRA) }
