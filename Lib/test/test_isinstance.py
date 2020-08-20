@@ -273,10 +273,10 @@ class TestIsInstanceIsSubclass(unittest.TestCase):
         self.assertEqual(True, issubclass(B(), int))
 
     def test_optional_isinstance(self):
-        self.assertTrue(issubclass(int, ?int))
-        self.assertTrue(issubclass(Child, ?Super))
-        self.assertTrue(isinstance(Child(), ?Super))
-        self.assertTrue(isinstance(None, ?Super))
+        self.assertTrue(issubclass(int, int?))
+        self.assertTrue(issubclass(Child, Super?))
+        self.assertTrue(isinstance(Child(), Super?))
+        self.assertTrue(isinstance(None, Super?))
 
 
 
