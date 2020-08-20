@@ -408,7 +408,7 @@ class GrammarTests(unittest.TestCase):
             gns['__annotations__']
 
     def test_annot_optional(self):
-        x: ?int = None
+        x: int? = None
         self.assertRaises(SyntaxError, eval, "?bar = 1")
 
     def test_var_annot_custom_maps(self):
